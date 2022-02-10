@@ -11,7 +11,7 @@ def main(lang: str, length: int, mask: str, excluded: str, excluded_words: List[
     with open(filename, 'r', encoding='utf-8') as f:
         words = f.readlines()
 
-    with open('output.txt', 'w') as f:
+    with open('output.txt', 'w', encoding='utf-8') as f:
         for w in words:
             word = w.strip()
             g = regex.match(word)
@@ -31,7 +31,7 @@ def main(lang: str, length: int, mask: str, excluded: str, excluded_words: List[
                 continue
 
             for excluded_word in excluded_words:
-                if word.startswith(excluded_word):
+                if len(excluded_word.strip()) > 0 and word.startswith(excluded_word):
                     should_continue = True
                     break
 
@@ -40,8 +40,9 @@ def main(lang: str, length: int, mask: str, excluded: str, excluded_words: List[
 
             f.write(f'{result}\n')
 
-    with open('output.txt', 'r') as f:
-        print(f.read())
+    with open('output.txt', 'r', encoding='utf-8') as f:
+        text = f.read()
+        print(text)
 
 
 def __build_regex(mask: str) -> Pattern[str]:
@@ -63,6 +64,7 @@ def __get_pos_arg(pos: int, default, name: str):
 
 
 if __name__ == "__main__":
+
     try:
         lang = __get_pos_arg(1, None, "Language")
         mask = __get_pos_arg(2, None, "Mask")
