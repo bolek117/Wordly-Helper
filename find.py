@@ -8,7 +8,8 @@ def main(lang: str, \
          length: int, \
          mask: str, \
          excluded_words: List[str], \
-         included_letters: str) -> None:
+         included_letters: str, \
+         guess_mask: List[str]) -> None:
     filename = f'wordlist_{lang}_{length}.txt.'
     
     regex = __build_regex(mask)
@@ -105,9 +106,10 @@ if __name__ == "__main__":
         mask = __get_pos_arg(2, None, "Mask")
         included_letters = __get_pos_arg(3, "", "Included Letters")
         excluded_words = __get_pos_arg(4, "", "Excluded words").split(',')
-        length = __get_pos_arg(5, 5, "Expected length")
+        guess_mask = __get_pos_arg(5, "", "Guess mask").split(',')
+        length = __get_pos_arg(6, 5, "Expected length")
 
-        main(lang, length, mask, excluded_words, included_letters) 
+        main(lang, length, mask, excluded_words, included_letters, guess_mask) 
     except Exception as e:
         print(e)
 
