@@ -1,3 +1,4 @@
+import json
 import re
 import sys
 from typing import List, Pattern
@@ -47,16 +48,11 @@ class PositionTablesList:
         return result
 
     def update_for(self, letter: str, mask: str, pos: int) -> PositionTable:
-        expected_can_be_at_position = False if mask[0] == '-' else True
-
         letter = letter[0].lower()
         existing = self.get_for(letter)
 
-        if expected_can_be_at_position:
-            return existing
-
         actual_can_be_at_position = existing.can_be_located_at_pos(pos)
-        if actual_can_be_at_position and mask[0] == '-':
+        if actual_can_be_at_position and mask[0] != '+':
             existing.set_false(pos)
             return existing
 
@@ -123,7 +119,8 @@ def main(lang: str, \
 
             for pos in range(len(word)):
                 letter = word[pos]
-                can_be_at_position = positions_tables.get_for(letter).can_be_located_at_pos(pos)
+                table = positions_tables.get_for(letter)
+                can_be_at_position = table.can_be_located_at_pos(pos)
                 if not can_be_at_position:
                     stop_condition_meet = True
                     break
@@ -138,7 +135,10 @@ def main(lang: str, \
         text = f.read()
         print(text)
 
-    print(f'info: Excluded letters: {excluded_letters}')
+    print(f'INFO Excluded letters: {excluded_letters}')
+
+    found_words = len(text.split('\n'))
+    print(f'INFO Found words: {found_words}')
 
 
 def __build_regex(mask: str) -> Pattern[str]:
@@ -193,16 +193,19 @@ def __get_pos_arg(pos: int, default, name: str):
 
 
 if __name__ == "__main__":
-
+    # TODO: Generate known words automatically
+    with open('config.json', 'r', encoding='utf-8') as f:
+        config = json.load(f)
+        
     try:
-        lang = __get_pos_arg(1, None, "Language")
-        mask = __get_pos_arg(2, None, "Mask")
-        included_letters = __get_pos_arg(3, "", "Included Letters")
-        excluded_words = __get_pos_arg(4, "", "Excluded words").split(',')
-        guess_mask = __get_pos_arg(5, "", "Guess mask").split(',')
-        length = int(__get_pos_arg(6, 5, "Expected length"))
+        lang = config['lang']
+        mask = config['mask']
+        known_letters = config['knownLetters']
+        used_words = config['usedWords'].split(',')
+        guess_masks = config['guessMasks'].split(',')
+        length = int(config['length'])
 
-        main(lang, length, mask, excluded_words, included_letters, guess_mask) 
+        main(lang, length, mask, used_words, known_letters, guess_masks) 
     except Exception as e:
         print(e)
 
