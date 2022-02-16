@@ -1,41 +1,63 @@
 import re
+import string
 import sys
 from typing import List, Pattern
 
 
-def main(lang: str, length: int, mask: str, excluded: str, excluded_words: List[str]) -> None:
+def main(lang: str, \
+         length: int, \
+         mask: str, \
+         excluded_words: List[str], \
+         included_letters: str) -> None:
     filename = f'wordlist_{lang}_{length}.txt.'
     
     regex = __build_regex(mask)
+    excluded_letters = __build_excluded_letters_from(included_letters, excluded_words)
 
     with open(filename, 'r', encoding='utf-8') as f:
         words = f.readlines()
+        words = [w.strip() for w in words]
 
     with open('output.txt', 'w', encoding='utf-8') as f:
-        for w in words:
-            word = w.strip()
-            g = regex.match(word)
+        for word in words:
 
+            g = regex.match(word)
             if not g:
+                #log_exit('Word mask')
                 continue
             
             result = g.group(0)
 
-            should_continue = False
-            for excluded_letter in excluded:
+            def log_exit(phase: str) -> None:
+                #print(f'Word: {word}, exit on phase {phase}')
+                pass
+
+            stop_condition_meet = False
+            for excluded_letter in excluded_letters:
                 if excluded_letter in result:
-                    should_continue = True
+                    stop_condition_meet = True
                     break
 
-            if should_continue:
+            if stop_condition_meet:
+                log_exit('Excluded letter found')
+                continue
+
+            for included_letter in included_letters:
+                if included_letter not in result:
+                    stop_condition_meet = True
+                    break
+
+            if stop_condition_meet:
+                log_exit('Included letter not found')
                 continue
 
             for excluded_word in excluded_words:
                 if len(excluded_word.strip()) > 0 and word.startswith(excluded_word):
-                    should_continue = True
+                    stop_condition_meet = True
                     break
 
-            if should_continue:
+            if stop_condition_meet:
+                log_exit('Excluded word')
                 continue
 
             f.write(f'{result}\n')
@@ -44,10 +66,23 @@ def main(lang: str, length: int, mask: str, excluded: str, excluded_words: List[
         text = f.read()
         print(text)
 
+    print(f'info: Excluded letters: {excluded_letters}')
+
 
 def __build_regex(mask: str) -> Pattern[str]:
     # mask = mask.replace('?', '[a-zA-Z]')
     return re.compile(mask)
+
+def __build_excluded_letters_from(included_letters: str, excluded_words: str) -> str:
+    charset = [letter for letter in included_letters]
+    result: List[str] = []
+
+    for excluded_word in excluded_words:
+        for letter in excluded_word:
+            if letter not in charset and letter not in result:
+                result.append(letter)
+
+    return ''.join(result)
 
 
 def __get_pos_arg(pos: int, default, name: str):
@@ -68,11 +103,11 @@ if __name__ == "__main__":
     try:
         lang = __get_pos_arg(1, None, "Language")
         mask = __get_pos_arg(2, None, "Mask")
-        excluded_letters = __get_pos_arg(3, "", "Excluded Letters")
+        included_letters = __get_pos_arg(3, "", "Included Letters")
         excluded_words = __get_pos_arg(4, "", "Excluded words").split(',')
         length = __get_pos_arg(5, 5, "Expected length")
 
-        main(lang, length, mask, excluded_letters, excluded_words) 
+        main(lang, length, mask, excluded_words, included_letters) 
     except Exception as e:
         print(e)
 
