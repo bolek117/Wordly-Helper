@@ -3,6 +3,11 @@ import string
 import sys
 from typing import List, Pattern
 
+class PositionTable:
+    def __init__(self, letter: str, positions: List[str]):
+        self.letter: str = letter[0]
+        self.positions: List[str] = positions
+
 
 def main(lang: str, \
          length: int, \
