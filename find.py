@@ -121,6 +121,17 @@ def main(lang: str, \
                 log_exit('Excluded word')
                 continue
 
+            for pos in range(len(word)):
+                letter = word[pos]
+                can_be_at_position = positions_tables.get_for(letter).can_be_located_at_pos(pos)
+                if not can_be_at_position:
+                    stop_condition_meet = True
+                    break
+
+            if stop_condition_meet:
+                log_exit('Letter can\'t be at position')
+                continue
+
             f.write(f'{result}\n')
 
     with open('output.txt', 'r', encoding='utf-8') as f:
@@ -147,7 +158,7 @@ def __build_excluded_letters_from(included_letters: str, excluded_words: str) ->
     return ''.join(result)
 
 
-def __build_position_tables(excluded_words: List[str], guess_masks: List[str], words_length: int) -> List[PositionTable]:
+def __build_position_tables(excluded_words: List[str], guess_masks: List[str], words_length: int) -> PositionTablesList:
     result: PositionTablesList = PositionTablesList(words_length)
 
     if len(excluded_words) != len(guess_masks):
