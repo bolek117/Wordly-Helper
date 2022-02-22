@@ -4,23 +4,38 @@ import sys
 from typing import List, Pattern
 
 
+# TODO: auto known letters based on guess patterns
+
+
 class PositionTable:
     def __init__(self, letter: str, positions: List[bool]):
         self.letter: str = letter[0]
-        self.can_be_at_position: List[bool] = positions
+        self.can_be_at_position: str = positions
 
     def can_be_located_at_pos(self, position: int) -> bool:
         if position > len(self.can_be_at_position):
             raise Exception(f'Positions table don\'t have enough positions `{self}`[{position}]')
             return False
 
-        return self.can_be_at_position[position]
+        return self.can_be_at_position[position] != '-'
 
-    def set_false(self, position: int) -> None:
-        self.can_be_at_position[position] = False
+    def __set_at_pos(self, pos: int, value: str) -> None:
+        as_list = list(self.can_be_at_position)
+        as_list[pos] = value[0]
+        self.can_be_at_position = ''.join(as_list)
+
+    def set_by_guess(self, position: int, mask: str) -> None:
+        mask = mask.strip()
+        if len(mask) != 1:
+            raise Exception('Mask have to be only on character')
+
+        if mask == '-' or \
+           (mask == '+' and self.can_be_at_position[position] != '-') or \
+           (mask == '?' and self.can_be_at_position[position] not in ['-', '+']):
+           self.__set_at_pos(position, mask)
 
     def __str__(self):
-        repr = ''.join(['+' if can_be else '-' for can_be in self.can_be_at_position])
+        repr = ''.join(['+' if mask != '-' else '-' for mask in self.can_be_at_position])
         return f'{self.letter}: `{repr}`'
 
     def __repr__(self):
@@ -34,7 +49,7 @@ class PositionTablesList:
         if word_length < 1:
             raise Exception('Word length must be greater than 0')
 
-        self.__word_length = word_length
+        self.word_length = word_length
 
     def get_for(self, letter: str) -> PositionTable:
         letter = letter[0].lower()
@@ -43,33 +58,27 @@ class PositionTablesList:
             if t.letter == letter:
                 return t
 
-        result = PositionTable(letter, [True] * self.__word_length)
+        result = PositionTable(letter, '?' * self.word_length)
         self.tables.append(result)
         return result
 
     def update_for(self, letter: str, mask: str, pos: int) -> PositionTable:
         letter = letter[0].lower()
         existing = self.get_for(letter)
-
-        actual_can_be_at_position = existing.can_be_located_at_pos(pos)
-        if actual_can_be_at_position and mask[0] != '+':
-            existing.set_false(pos)
-            return existing
-
+        existing.set_by_guess(pos, mask)
         return existing
 
 
 def main(lang: str, \
          word_length: int, \
-         mask: str, \
          excluded_words: List[str], \
          included_letters: str, \
          guess_masks: List[str]) -> None:
     filename = f'wordlist_{lang}_{word_length}.txt.'
     
-    regex = __build_regex(mask)
     excluded_letters = __build_excluded_letters_from(included_letters, excluded_words)
     positions_tables = __build_position_tables(excluded_words, guess_masks, word_length)
+    regex = __build_regex(positions_tables)
 
     with open(filename, 'r', encoding='utf-8') as f:
         words = f.readlines()
@@ -141,9 +150,18 @@ def main(lang: str, \
     print(f'INFO Found words: {found_words}')
 
 
-def __build_regex(mask: str) -> Pattern[str]:
-    # mask = mask.replace('?', '[a-zA-Z]')
-    return re.compile(mask)
+def __build_regex(position_tables: PositionTablesList) -> Pattern[str]:
+    result = ['.'] * position_tables.word_length
+    for table in position_tables.tables:
+        guess_mask = table.can_be_at_position
+        letter = table.letter
+        
+        for i in range(0, len(guess_mask)):
+            if guess_mask[i] == '+':
+                result[i] = letter
+
+    result = ''.join(result)
+    return re.compile(''.join(result))
 
 
 def __build_excluded_letters_from(included_letters: str, excluded_words: str) -> str:
@@ -179,19 +197,6 @@ def __build_position_tables(excluded_words: List[str], guess_masks: List[str], w
     return result
 
 
-def __get_pos_arg(pos: int, default, name: str):
-    if pos < 0:
-        raise ValueError('Unable to fetch argument on negative position')
-
-    if len(sys.argv) - 1 < pos:
-        if default is None:
-            raise ValueError(f'Positional argument `{name}` not found on position `{pos}`')
-        else:
-            return default
-        
-    return sys.argv[pos]
-
-
 if __name__ == "__main__":
     # TODO: Generate known words automatically
     with open('config.json', 'r', encoding='utf-8') as f:
@@ -199,13 +204,12 @@ if __name__ == "__main__":
         
     try:
         lang = config['lang']
-        mask = config['mask']
         known_letters = config['knownLetters']
         used_words = config['usedWords'].split(',')
         guess_masks = config['guessMasks'].split(',')
         length = int(config['length'])
 
-        main(lang, length, mask, used_words, known_letters, guess_masks) 
+        main(lang, length, used_words, known_letters, guess_masks) 
     except Exception as e:
         print(e)
 
