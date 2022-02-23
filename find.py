@@ -28,6 +28,10 @@ class PositionTable:
         can_be_at_position = mask == '+'
         self.__set_at_pos(position, can_be_at_position)
 
+    def set_not_found(self) -> None:
+        not_found_mask = [False] * len(self.position_mask)
+        self.position_mask = not_found_mask
+
     @staticmethod
     def default_for(letter: str, length: int):
         return PositionTable(letter, [PositionTable.__default_character] * length)
@@ -69,6 +73,10 @@ class PositionTablesList:
         existing.set_by_guess(pos, mask)
         return existing
 
+    def set_not_found(self, letter: str) -> PositionTable:
+        existing = self.get_for(letter)
+        existing.set_not_found()
+
 
 def main(lang: str, \
          word_length: int, \
@@ -77,7 +85,7 @@ def main(lang: str, \
     guess_tables = tuple(zip(used_words, guess_masks))
     known_letters = KnownLetters(guess_tables)
 
-    position_tables = __build_position_tables(used_words, guess_masks)
+    position_tables = __build_position_tables(used_words, guess_masks, known_letters)
     
     regex = __build_regex(position_tables)
 
@@ -162,7 +170,10 @@ def __build_regex(position_tables: PositionTablesList) -> Pattern[str]:
     return re.compile(''.join(result))
 
 
-def __build_position_tables(used_words: List[str], guess_masks: List[str]) -> PositionTablesList:
+def __build_position_tables(used_words: List[str], \
+        guess_masks: List[str], \
+        known_letters: KnownLetters) \
+        -> PositionTablesList:
     word_length = len(used_words[0].strip())
     result: PositionTablesList = PositionTablesList(word_length)
 
@@ -177,9 +188,11 @@ def __build_position_tables(used_words: List[str], guess_masks: List[str]) -> Po
         data = tuple(zip(word, wordmask))
         for position in range(len(data)):
             letter = data[position][0]
-            mask = data[position][1]
-
-            result.update_for(letter, mask, position)
+            if letter in known_letters.excluded_letters:
+                result.set_not_found(letter)
+            else:
+                mask = data[position][1]
+                result.update_for(letter, mask, position)
 
     return result
 
