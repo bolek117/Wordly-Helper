@@ -1,3 +1,4 @@
 output.txt
+config.json
 .vscode
-*.pyc
+__pycache__
