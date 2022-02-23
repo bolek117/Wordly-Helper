@@ -1,14 +1,10 @@
 {
     "lang": "pl",
-    "mask": ".....",
-    "knownLetters": "",
-    "usedWords":  "domek",
+    "usedWords":  "",
     "guessMasks": "",
     "length": 5,
     "example": {
         "lang": "pl",
-        "mask": ".o...",
-        "knownLetters": "okal",
         "usedWords":  "domek,żonka,koala",
         "guessMasks": "-+--?,-+-??,?+??-",
         "length": 5
