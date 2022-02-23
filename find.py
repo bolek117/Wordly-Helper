@@ -82,15 +82,6 @@ class PositionTablesList:
         return existing
 
 
-def read_dictionary(lang: str, word_length: int) -> List[str]:
-    filename = f'wordlist_{lang}_{word_length}.txt'
-
-    with open(filename, 'r', encoding='utf-8') as f:
-        words = f.readlines()
-        words = [w.strip() for w in words]
-        return words
-
-
 def main(lang: str, \
          word_length: int, \
          used_words: List[str], \
@@ -252,6 +243,15 @@ def __build_position_tables(excluded_words: List[str], guess_masks: List[str], w
             result.update_for(letter, mask, position)
 
     return result
+
+
+def read_dictionary(lang: str, word_length: int) -> List[str]:
+    filename = f'wordlist_{lang}_{word_length}.txt'
+
+    with open(filename, 'r', encoding='utf-8') as f:
+        words = f.readlines()
+        words = [w.strip() for w in words]
+        return words
 
 
 if __name__ == "__main__":
