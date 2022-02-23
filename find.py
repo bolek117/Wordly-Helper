@@ -93,12 +93,12 @@ def read_dictionary(lang: str, word_length: int) -> List[str]:
 
 def main(lang: str, \
          word_length: int, \
-         excluded_words: List[str], \
+         used_words: List[str], \
          guess_masks: List[str]) -> None:
     
-    position_tables = __build_position_tables(excluded_words, guess_masks, word_length)
+    position_tables = __build_position_tables(used_words, guess_masks, word_length)
     included_letters = __build_included_letters_from(position_tables)
-    excluded_letters = __build_excluded_letters_from(included_letters, excluded_words)
+    excluded_letters = __build_excluded_letters_from(included_letters, used_words)
     regex = __build_regex(position_tables)
 
     words = read_dictionary(lang, word_length)
@@ -136,7 +136,7 @@ def main(lang: str, \
                 log_exit('Included letter not found')
                 continue
 
-            for excluded_word in excluded_words:
+            for excluded_word in used_words:
                 if len(excluded_word.strip()) > 0 and word.startswith(excluded_word):
                     stop_condition_meet = True
                     break
