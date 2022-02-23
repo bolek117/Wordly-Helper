@@ -1,6 +1,5 @@
 import json
 import re
-import sys
 from typing import List, Pattern
 
 # TODO: Optimize guess masks by replacing removing one `?` when match (`+`) is found
@@ -10,21 +9,23 @@ class PositionTable:
     def __init__(self, letter: str, positions: List[bool]):
         self.letter: str = letter[0]
         self.position_mask: List[str] = positions
+        self.__modified: bool = False
 
     def can_be_located_at_pos(self, position: int) -> bool:
         if position > len(self.position_mask):
             raise Exception(f'Positions table don\'t have enough positions `{self}`[{position}]')
 
-        return self.position_mask[position] != '-'
+        return self.position_mask[position] not in ['-', '?']
 
-    def __set_at_pos(self, pos: int, value: str) -> None:
-        self.position_mask[pos] = value[0]
+    def __set_at_pos(self, pos: int, mask: str) -> None:
+        self.position_mask[pos] = mask[0]
+        self.__modified = True
 
     def set_by_guess(self, position: int, mask: str) -> None:
         mask = mask.strip()
         if len(mask) != 1:
             raise Exception('Mask have to be only on character')
-
+        
         if mask == '-' or \
            (mask == '+' and self.position_mask[position] != '-') or \
            (mask == '?' and self.position_mask[position] not in ['-', '+']):
