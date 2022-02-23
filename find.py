@@ -82,21 +82,27 @@ class PositionTablesList:
         return existing
 
 
+def read_dictionary(lang: str, word_length: int) -> List[str]:
+    filename = f'wordlist_{lang}_{word_length}.txt'
+
+    with open(filename, 'r', encoding='utf-8') as f:
+        words = f.readlines()
+        words = [w.strip() for w in words]
+        return words
+
+
 def main(lang: str, \
          word_length: int, \
          excluded_words: List[str], \
          guess_masks: List[str]) -> None:
-    filename = f'wordlist_{lang}_{word_length}.txt.'
     
     position_tables = __build_position_tables(excluded_words, guess_masks, word_length)
     included_letters = __build_included_letters_from(position_tables)
     excluded_letters = __build_excluded_letters_from(included_letters, excluded_words)
     regex = __build_regex(position_tables)
 
-    with open(filename, 'r', encoding='utf-8') as f:
-        words = f.readlines()
-        words = [w.strip() for w in words]
-
+    words = read_dictionary(lang, word_length)
+    output = []
     with open('output.txt', 'w', encoding='utf-8') as f:
         for word in words:
 
@@ -151,17 +157,14 @@ def main(lang: str, \
                 log_exit('Letter can\'t be at position')
                 continue
 
-            f.write(f'{result}\n')
+            line = f'{result}\n'
+            f.write(line)
+            output.append(line.strip())
 
-    with open('output.txt', 'r', encoding='utf-8') as f:
-        text = f.read().strip()
-        print(text)
-
+    print('\n'.join(output))
     print()
     print(f'INFO Excluded letters: {excluded_letters}')
-
-    found_words = len(text.split('\n'))
-    print(f'INFO Found words: {found_words}')
+    print(f'INFO Found words: {len(output)}')
 
 
 def __build_included_letters_from(position_tables: PositionTablesList) -> str:
