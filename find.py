@@ -1,9 +1,8 @@
 import json
 import re
-from typing import List, Pattern
+from typing import List, Pattern, Tuple
 from known_letters import KnownLetters
 
-# TODO: Optimize guess masks by replacing removing one `?` when match (`+`) is found
 class PositionTable:
     __default_character = True
     
@@ -86,8 +85,7 @@ def main(lang: str, \
     known_letters = KnownLetters(guess_tables)
 
     position_tables = __build_position_tables(used_words, guess_masks, known_letters)
-    
-    regex = __build_regex(position_tables)
+    regex = __build_regex(guess_tables)
 
     words = read_dictionary(lang, word_length)
     output = []
@@ -149,21 +147,28 @@ def main(lang: str, \
             f.write(line)
             output.append(line.strip())
 
-    print('\n'.join(output))
+    print('\n'.join(output).strip())
     print()
     print(f'INFO Included letters: {known_letters.included_letters}')
     print(f'INFO Excluded letters: {known_letters.excluded_letters}')
     print(f'INFO Found words: {len(output)}')
 
 
-def __build_regex(position_tables: PositionTablesList) -> Pattern[str]:
-    result = ['.'] * position_tables.word_length
-    for table in position_tables.tables:
-        guess_mask = table.position_mask
-        letter = table.letter
-        
-        for i in range(0, len(guess_mask)):
-            if guess_mask[i] == '+':
+# TODO: use [^excluded_letters] instead of `.`
+def __build_regex(guess_tables: Tuple[str, str]) -> Pattern[str]:
+    result = ['.'] * len(guess_tables[0][0])
+    for t in guess_tables:
+        word = t[0]
+        guess = t[1]
+
+        if '+' not in guess:
+            continue
+
+        for i in range(len(word)):
+            letter = word[i][0].lower()
+            mask = guess[i]
+
+            if mask == '+':
                 result[i] = letter
 
     result = ''.join(result)
