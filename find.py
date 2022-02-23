@@ -1,6 +1,6 @@
 import json
 import re
-from typing import List, Pattern
+from typing import List, Pattern, Tuple
 
 # TODO: Optimize guess masks by replacing removing one `?` when match (`+`) is found
 class PositionTable:
@@ -95,10 +95,11 @@ def main(lang: str, \
          word_length: int, \
          used_words: List[str], \
          guess_masks: List[str]) -> None:
-    
+    guess_tables = tuple(zip(used_words, guess_masks))
+
     position_tables = __build_position_tables(used_words, guess_masks, word_length)
-    included_letters = __build_included_letters_from(position_tables)
-    excluded_letters = __build_excluded_letters_from(included_letters, used_words)
+    
+    known_letters = KnownLetters(guess_tables)
     regex = __build_regex(position_tables)
 
     words = read_dictionary(lang, word_length)
@@ -118,7 +119,7 @@ def main(lang: str, \
                 pass
 
             stop_condition_meet = False
-            for excluded_letter in excluded_letters:
+            for excluded_letter in known_letters.excluded_letters:
                 if excluded_letter in result:
                     stop_condition_meet = True
                     break
@@ -127,7 +128,7 @@ def main(lang: str, \
                 log_exit('Excluded letter found')
                 continue
 
-            for included_letter in included_letters:
+            for included_letter in known_letters.included_letters:
                 if included_letter not in result:
                     stop_condition_meet = True
                     break
@@ -163,20 +164,47 @@ def main(lang: str, \
 
     print('\n'.join(output))
     print()
-    print(f'INFO Excluded letters: {excluded_letters}')
+    print(f'INFO Included letters: {known_letters.included_letters}')
+    print(f'INFO Excluded letters: {known_letters.excluded_letters}')
     print(f'INFO Found words: {len(output)}')
 
 
-def __build_included_letters_from(position_tables: PositionTablesList) -> str:
-    result = []
-    for table in position_tables.tables:
-        letter = table.letter
-        mask = table.position_mask
+class KnownLetters:
+    def __init__(self, guess_tables: Tuple[str, str]):
+        self.included_letters = []
+        self.excluded_letters = []
+        self.unknown = []
+        self.__process(guess_tables)
 
-        if letter not in result and ('+' in mask or '?' in mask):
-            result.append(letter)
+    def __process(self, guess_tables: Tuple[str, str]) -> None:
+        for t in guess_tables:
+            word = t[0].strip().lower()
+            guess = t[1].strip()
 
-    return ''.join(result)
+            if len(word) != len(guess):
+                raise Exception(f'Guess mask must match word length (word `{word}`)')
+
+            for i in range(len(word)):
+                letter = word[i]
+                mask = guess[i]
+
+                if mask == '-':
+                    self.__add_excluded(letter)
+                elif mask == '+' or mask == '?':
+                    self.__add_included(letter)
+                else:
+                    self.unknown.append(letter)
+
+    def __add_included(self, letter: str) -> None:
+        letter = letter[0]
+        if letter not in self.included_letters:
+            self.included_letters.append(letter)
+
+    def __add_excluded(self, letter: str) -> None:
+        letter = letter[0]
+        if letter not in self.included_letters and \
+           letter not in self.excluded_letters:
+            self.excluded_letters.append(letter)
 
 
 def __build_regex(position_tables: PositionTablesList) -> Pattern[str]:
