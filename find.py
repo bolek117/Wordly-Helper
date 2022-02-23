@@ -4,44 +4,35 @@ from typing import List, Pattern, Tuple
 
 # TODO: Optimize guess masks by replacing removing one `?` when match (`+`) is found
 class PositionTable:
-    __default_character = ' '
+    __default_character = True
     
     def __init__(self, letter: str, positions: List[bool]):
         self.letter: str = letter[0]
-        self.position_mask: List[str] = positions
-        self.__modified: bool = False
+        self.position_mask: List[bool] = positions
 
-    def can_be_located_at_pos(self, position: int) -> bool:
+    def can_be_at(self, position: int) -> bool:
         if position > len(self.position_mask):
             raise Exception(f'Positions table don\'t have enough positions `{self}`[{position}]')
 
-        return self.position_mask[position] not in ['-', '?']
+        return self.position_mask[position]
 
-    def __set_at_pos(self, pos: int, mask: str) -> None:
-        self.position_mask[pos] = mask[0]
-        self.__modified = True
+    def __set_at_pos(self, pos: int, can_be_at_pos: bool) -> None:
+        self.position_mask[pos] = can_be_at_pos
 
     def set_by_guess(self, position: int, mask: str) -> None:
         mask = mask.strip()
         if len(mask) != 1:
-            raise Exception('Mask have to be only on character')
+            raise Exception('Mask have to be one character long')
         
-        if mask == '-' or \
-           (mask == '+' and self.position_mask[position] != '-') or \
-           (mask == '?' and self.position_mask[position] not in ['-', '+']):
-           self.__set_at_pos(position, mask)
-
-    def set_not_found(self) -> None:
-        for i in range(len(self.position_mask)):
-            if self.position_mask[i] not in ['?', '+']:
-                self.position_mask[i] = '-' 
+        can_be_at_position = mask == '+'
+        self.__set_at_pos(position, can_be_at_position)
 
     @staticmethod
     def default_for(letter: str, length: int):
         return PositionTable(letter, [PositionTable.__default_character] * length)
 
     def __str__(self):
-        repr = ''.join(self.position_mask)
+        repr = ['+' if c else '-' for c in self.position_mask]
         return f'{self.letter}: `{repr}`'
 
     def __repr__(self):
@@ -52,6 +43,7 @@ class PositionTablesList:
     def __init__(self, word_length: int):
         self.tables: List[PositionTable] = []
 
+        word_length = int(word_length)
         if word_length < 1:
             raise Exception('Word length must be greater than 0')
 
@@ -73,11 +65,6 @@ class PositionTablesList:
         mask = mask[0]
 
         existing = self.get_for(letter)
-
-        if mask == '-':
-            existing.set_not_found()
-            return existing
-
         existing.set_by_guess(pos, mask)
         return existing
 
@@ -87,10 +74,10 @@ def main(lang: str, \
          used_words: List[str], \
          guess_masks: List[str]) -> None:
     guess_tables = tuple(zip(used_words, guess_masks))
-
-    position_tables = __build_position_tables(used_words, guess_masks, word_length)
-    
     known_letters = KnownLetters(guess_tables)
+
+    position_tables = __build_position_tables(used_words, guess_masks)
+    
     regex = __build_regex(position_tables)
 
     words = read_dictionary(lang, word_length)
@@ -140,7 +127,7 @@ def main(lang: str, \
             for pos in range(len(word)):
                 letter = word[pos]
                 table = position_tables.get_for(letter)
-                can_be_at_position = table.can_be_located_at_pos(pos)
+                can_be_at_position = table.can_be_at(pos)
                 if not can_be_at_position:
                     stop_condition_meet = True
                     break
@@ -212,25 +199,14 @@ def __build_regex(position_tables: PositionTablesList) -> Pattern[str]:
     return re.compile(''.join(result))
 
 
-def __build_excluded_letters_from(included_letters: str, excluded_words: str) -> str:
-    charset = [letter for letter in included_letters]
-    result: List[str] = []
+def __build_position_tables(used_words: List[str], guess_masks: List[str]) -> PositionTablesList:
+    word_length = len(used_words[0].strip())
+    result: PositionTablesList = PositionTablesList(word_length)
 
-    for excluded_word in excluded_words:
-        for letter in excluded_word:
-            if letter not in charset and letter not in result:
-                result.append(letter)
-
-    return ''.join(result)
-
-
-def __build_position_tables(excluded_words: List[str], guess_masks: List[str], words_length: int) -> PositionTablesList:
-    result: PositionTablesList = PositionTablesList(words_length)
-
-    if len(excluded_words) != len(guess_masks):
+    if len(used_words) != len(guess_masks):
         raise Exception('Define guess mask for each of the excluded words')
 
-    zipped = tuple(zip(excluded_words, guess_masks))
+    zipped = tuple(zip(used_words, guess_masks))
     for word_wordmask in zipped:
         word = word_wordmask[0]
         wordmask = word_wordmask[1]
