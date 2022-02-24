@@ -1,6 +1,6 @@
 {
     "lang": "pl",
     "usedWords":  "domek,żonka,koala",
-    "guessMasks": "-+--?,-+-??,?+??-",
+    "guessMasks": "-+--*,-+-**,*+**-",
     "length": 5
 }

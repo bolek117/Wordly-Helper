@@ -4,6 +4,7 @@ import re
 from typing import List, Pattern, Tuple
 from known_letters import KnownLetters
 from position_table import PositionTable, PositionTablesList
+import common
 
 
 def main(lang: str, \
@@ -79,7 +80,7 @@ def main(lang: str, \
     found_words = len(output)
     if found_words > 25:
         output = __draw_from(output, 25)
-        
+
     print('\n'.join(output).strip())
     print()
     print(f'INFO Included letters: {known_letters.included_letters}')
@@ -109,14 +110,14 @@ def __build_regex(guess_tables: Tuple[str, str]) -> Pattern[str]:
         word = t[0]
         guess = t[1]
 
-        if '+' not in guess:
+        if common.CHAR_FOUND not in guess:
             continue
 
         for i in range(len(word)):
             letter = word[i][0].lower()
             mask = guess[i]
 
-            if mask == '+':
+            if mask == common.CHAR_FOUND:
                 result[i] = letter
 
     result = ''.join(result)

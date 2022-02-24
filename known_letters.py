@@ -1,5 +1,5 @@
 from typing import Tuple
-
+import common
 
 class KnownLetters:
     def __init__(self, guess_tables: Tuple[str, str]):
@@ -20,9 +20,9 @@ class KnownLetters:
                 letter = word[i]
                 mask = guess[i]
 
-                if mask == '-':
+                if mask == common.CHAR_NOT_FOUND:
                     self.__add_excluded(letter)
-                elif mask == '+' or mask == '?':
+                elif mask == common.CHAR_FOUND or mask == common.CHAR_WRONG_POSITION:
                     self.__add_included(letter)
                 else:
                     self.unknown.append(letter)

@@ -1,4 +1,5 @@
 from typing import List
+import common
 
 
 class PositionTable:
@@ -22,7 +23,7 @@ class PositionTable:
         if len(mask) != 1:
             raise Exception('Mask have to be one character long')
         
-        can_be_at_position = mask == '+'
+        can_be_at_position = (mask == common.CHAR_FOUND)
         self.__set_at_pos(position, can_be_at_position)
 
     def set_not_found(self) -> None:
@@ -34,7 +35,7 @@ class PositionTable:
         return PositionTable(letter, [PositionTable.__default_character] * length)
 
     def __str__(self):
-        repr = ['+' if c else '-' for c in self.position_mask]
+        repr = [common.CHAR_FOUND if c else common.CHAR_NOT_FOUND for c in self.position_mask]
         return f'{self.letter}: `{repr}`'
 
     def __repr__(self):
