@@ -1,4 +1,5 @@
 import json
+from random import randrange
 import re
 from typing import List, Pattern, Tuple
 from known_letters import KnownLetters
@@ -75,11 +76,30 @@ def main(lang: str, \
             f.write(line)
             output.append(line.strip())
 
+    found_words = len(output)
+    if found_words > 25:
+        output = __draw_from(output, 25)
+        
     print('\n'.join(output).strip())
     print()
     print(f'INFO Included letters: {known_letters.included_letters}')
     print(f'INFO Excluded letters: {known_letters.excluded_letters}')
-    print(f'INFO Found words: {len(output)}')
+    print(f'INFO Found words: {found_words}')
+
+
+def __draw_from(collection: List, count: int) -> List:
+    result = []
+    collection_len = len(collection)
+
+    for _ in range(count):
+        upper_limit = collection_len - 1
+        draw = randrange(upper_limit)
+        collection_len -= 1
+
+        element = collection.pop(draw)
+        result.append(element)
+
+    return result
 
 
 # TODO: use [^excluded_letters] instead of `.`
