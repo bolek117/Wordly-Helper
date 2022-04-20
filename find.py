@@ -78,15 +78,17 @@ def main(lang: str, \
             f.write(line)
             output.append(line.strip())
 
+    expected_count = 15
     found_words_count = len(output)
-    found_words = __draw_from(output, 25) if found_words_count > 25 else output
+    found_words = __draw_from(output, expected_count)
 
-    withouth_repetitions = __get_withouth_repetitions(output)
-    withouth_repetitions_selection = __draw_from(withouth_repetitions, 25)
+    all_withouth_repetitions = __get_withouth_repetitions(output)
+    withouth_repetitions = __draw_from(all_withouth_repetitions, expected_count)
+    withouth_repetitions = __fill_to_count(withouth_repetitions, expected_count)
 
-    table = list(zip(found_words, withouth_repetitions_selection))
+    table = list(zip(found_words, withouth_repetitions))
     table.append(('-- SUM --', '-- SUM --'))
-    table.append((found_words_count, len(withouth_repetitions)))
+    table.append((found_words_count, len(all_withouth_repetitions)))
 
     print(tabulate.tabulate(table, tablefmt='psql',
           headers=['From all words', 'Withouth repeated letters']))
@@ -113,6 +115,19 @@ def __draw_from(collection: List, expected_count: int) -> List:
 
     return result
 
+
+def __fill_to_count(collection: List[str], expected_count: int) -> List[str]:
+    collection_len = len(collection)
+    if collection_len >= expected_count:
+        return collection
+
+    to_be_inserted = expected_count - collection_len
+    filler = [''] * to_be_inserted
+
+    result = list(collection)
+    result.extend(filler)
+
+    return result
 
 def __get_withouth_repetitions(collection: List[str]) -> List[str]:
     result = []
