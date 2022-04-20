@@ -1,6 +1,7 @@
 import json
 from random import randrange
 import re
+import tabulate
 from typing import List, Pattern, Tuple
 from known_letters import KnownLetters
 from position_table import PositionTable, PositionTablesList
@@ -77,28 +78,57 @@ def main(lang: str, \
             f.write(line)
             output.append(line.strip())
 
-    found_words = len(output)
-    if found_words > 25:
-        output = __draw_from(output, 25)
+    found_words_count = len(output)
+    found_words = __draw_from(output, 25) if found_words_count > 25 else output
 
-    print('\n'.join(output).strip())
+    withouth_repetitions = __get_withouth_repetitions(output)
+    withouth_repetitions_selection = __draw_from(withouth_repetitions, 25)
+
+    table = list(zip(found_words, withouth_repetitions_selection))
+    table.append(('-- SUM --', '-- SUM --'))
+    table.append((found_words_count, len(withouth_repetitions)))
+
+    print(tabulate.tabulate(table, tablefmt='psql',
+          headers=['From all words', 'Withouth repeated letters']))
+
     print()
     print(f'INFO Included letters: {known_letters.included_letters}')
     print(f'INFO Excluded letters: {known_letters.excluded_letters}')
-    print(f'INFO Found words: {found_words}')
+    print(f'INFO Found words: {found_words_count}')
 
 
-def __draw_from(collection: List, count: int) -> List:
-    result = []
+def __draw_from(collection: List, expected_count: int) -> List:
     collection_len = len(collection)
+    if collection_len <= expected_count:
+        return collection
 
-    for _ in range(count):
+    result = []
+    for _ in range(expected_count):
         upper_limit = collection_len - 1
         draw = randrange(upper_limit)
         collection_len -= 1
 
         element = collection.pop(draw)
         result.append(element)
+
+    return result
+
+
+def __get_withouth_repetitions(collection: List[str]) -> List[str]:
+    result = []
+    for word in collection:
+        used_letters = []
+        repetition_found = False
+
+        for letter in word:
+            if letter in used_letters:
+                repetition_found = True
+                break
+
+            used_letters.append(letter)
+
+        if not repetition_found:
+            result.append(word)
 
     return result
 
